@@ -9,6 +9,7 @@
 .PARAMETER Verbose
   Show extra detail for passing checks (default: only show detail on failure).
 #>
+
 param(
   [switch]$Json,
   [switch]$Verbose
@@ -36,13 +37,18 @@ function Invoke-Check {
     [string]$Category = "general",
     [scriptblock]$Action
   )
+
   try {
-    $output = (& $Action 2>&1) | Out-String
+    # Capture output (stdout+stderr) without changing formatting behaviour:
+    # Keep Out-String formatting, but avoid the extra pipeline stage.
+    $raw = & $Action 2>&1
+    $detail = (Out-String -InputObject $raw).Trim()
+
     [pscustomobject]@{
       check    = $Name
       category = $Category
       ok       = $true
-      detail   = $output.Trim()
+      detail   = $detail
     }
   }
   catch {
@@ -50,13 +56,14 @@ function Invoke-Check {
       check    = $Name
       category = $Category
       ok       = $false
-      detail   = $_.Exception.Message.Trim()
+      detail   = ($_.Exception.Message.Trim())
     }
   }
 }
 
 function Write-CheckLine {
   param([pscustomobject]$Result)
+
   if ($Result.ok) {
     $icon  = "[OK]"
     $color = "Green"
@@ -68,13 +75,14 @@ function Write-CheckLine {
     $color = "Red"
     $msg   = "$icon  $($Result.check): $($Result.detail)"
   }
+
   Write-Host $msg -ForegroundColor $color
 }
 
 # ── Resolve hf-safe.cmd path relative to this script ─────────────────────────
 
-$scriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
-$hfWrapper  = Join-Path $scriptDir "..\hf-safe.cmd"
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
+$hfWrapper = Join-Path $scriptDir "..\hf-safe.cmd"
 
 # Use Test-Path before Resolve-Path — Resolve-Path throws on missing files
 $hfWrapperResolved = if (Test-Path $hfWrapper) {
@@ -88,30 +96,41 @@ else {
 
 $results = [System.Collections.Generic.List[pscustomobject]]::new()
 
+# Cache working directory and .git check (avoid repeated calls)
+$cwdPath  = (Resolve-Path '.').Path
+$hasGit   = Test-Path ".git"
+
 # Workspace
 $results.Add([pscustomobject]@{
   check    = "workspace_git_repo"
   category = "workspace"
-  ok       = (Test-Path ".git")
-  detail   = if (Test-Path ".git") { "Repo found at: $(Resolve-Path '.')" }
-             else { "No .git at: $(Resolve-Path '.'). Run: git init" }
+  ok       = $hasGit
+  detail   = if ($hasGit) { "Repo found at: $cwdPath" }
+             else { "No .git at: $cwdPath. Run: git init" }
 })
 
 $results.Add([pscustomobject]@{
   check    = "working_directory"
   category = "workspace"
   ok       = $true
-  detail   = (Resolve-Path '.').Path
+  detail   = $cwdPath
 })
 
 # GitHub CLI
 $hasGh = Test-CommandPresent "gh"
+$ghVerDetail = if ($hasGh) {
+  $ver = (gh --version 2>&1)
+  if ($ver -is [System.Array]) { $ver[0] } else { $ver }
+}
+else {
+  "gh not found on PATH. Install: https://cli.github.com"
+}
+
 $results.Add([pscustomobject]@{
   check    = "gh_cli_present"
   category = "github"
   ok       = $hasGh
-  detail   = if ($hasGh) { (gh --version 2>&1 | Select-Object -First 1) }
-             else { "gh not found on PATH. Install: https://cli.github.com" }
+  detail   = $ghVerDetail
 })
 
 if ($hasGh) {
@@ -120,17 +139,18 @@ if ($hasGh) {
 }
 
 # Hugging Face CLI wrapper
+$hfWrapperExists = Test-Path $hfWrapperResolved
 $results.Add([pscustomobject]@{
   check    = "hf_wrapper_present"
   category = "huggingface"
-  ok       = (Test-Path $hfWrapperResolved)
+  ok       = $hfWrapperExists
   detail   = $hfWrapperResolved
 })
 
-if (Test-Path $hfWrapperResolved) {
-  $results.Add((Invoke-Check "hf_version"          "huggingface" { & $hfWrapperResolved version }))
-  $results.Add((Invoke-Check "hf_auth_whoami"       "huggingface" { & $hfWrapperResolved auth whoami }))
-  $results.Add((Invoke-Check "hf_safe_models_list"  "huggingface" { & $hfWrapperResolved models list --search "mcp" --limit 3 }))
+if ($hfWrapperExists) {
+  $results.Add((Invoke-Check "hf_version"         "huggingface" { & $hfWrapperResolved version }))
+  $results.Add((Invoke-Check "hf_auth_whoami"      "huggingface" { & $hfWrapperResolved auth whoami }))
+  $results.Add((Invoke-Check "hf_safe_models_list" "huggingface" { & $hfWrapperResolved models list --search "mcp" --limit 3 }))
 }
 
 # Env / secrets
@@ -145,12 +165,20 @@ $results.Add([pscustomobject]@{
 
 # Python (informational — required for HF CLI install)
 $hasPy = Test-CommandPresent "python"
+$pyDetail = if ($hasPy) {
+  # Keep behaviour similar to before (string + Trim)
+  $pv = (python --version 2>&1)
+  if ($pv -is [System.Array]) { ($pv -join [Environment]::NewLine).Trim() } else { ($pv.ToString()).Trim() }
+}
+else {
+  "python not found — required to install HF CLI via pip"
+}
+
 $results.Add([pscustomobject]@{
   check    = "python_present"
   category = "deps"
   ok       = $hasPy
-  detail   = if ($hasPy) { (python --version 2>&1 | Out-String).Trim() }
-             else { "python not found — required to install HF CLI via pip" }
+  detail   = $pyDetail
 })
 
 # ── Output ────────────────────────────────────────────────────────────────────
@@ -160,7 +188,24 @@ if ($Json) {
   exit 0
 }
 
-$categories = $results | Select-Object -ExpandProperty category -Unique
+# Build stable category order (first-seen order)
+$seen = @{}
+$categories = New-Object System.Collections.Generic.List[string]
+foreach ($r in $results) {
+  if (-not $seen.ContainsKey($r.category)) {
+    $seen[$r.category] = $true
+    $categories.Add($r.category) | Out-Null
+  }
+}
+
+# Group results by category once (avoid repeated filtering)
+$byCategory = @{}
+foreach ($r in $results) {
+  if (-not $byCategory.ContainsKey($r.category)) {
+    $byCategory[$r.category] = [System.Collections.Generic.List[pscustomobject]]::new()
+  }
+  $byCategory[$r.category].Add($r) | Out-Null
+}
 
 Write-Host ""
 Write-Host "══════════════════════════════════════════" -ForegroundColor Cyan
@@ -170,10 +215,17 @@ Write-Host "══════════════════════�
 foreach ($cat in $categories) {
   Write-Host ""
   Write-Host "  ▸ $($cat.ToUpper())" -ForegroundColor DarkCyan
-  $results | Where-Object { $_.category -eq $cat } | ForEach-Object { Write-CheckLine $_ }
+
+  foreach ($item in $byCategory[$cat]) {
+    Write-CheckLine $item
+  }
 }
 
-$failed = $results | Where-Object { -not $_.ok }
+# Compute failures once without pipeline
+$failed = [System.Collections.Generic.List[pscustomobject]]::new()
+foreach ($r in $results) {
+  if (-not $r.ok) { $failed.Add($r) | Out-Null }
+}
 
 Write-Host ""
 Write-Host "──────────────────────────────────────────" -ForegroundColor DarkGray
@@ -185,8 +237,8 @@ if ($failed.Count -eq 0) {
 }
 else {
   Write-Host "  Status: ATTENTION REQUIRED — $($failed.Count) failing check(s):" -ForegroundColor Yellow
-  $failed | ForEach-Object {
-    Write-Host "    • $($_.check)" -ForegroundColor Red
+  foreach ($f in $failed) {
+    Write-Host "    • $($f.check)" -ForegroundColor Red
   }
   Write-Host ""
   Write-Host "  See troubleshooting matrix in GITHUB_HF_ECOSYSTEM_PLAYBOOK.md" -ForegroundColor DarkGray
