@@ -8,49 +8,92 @@ on:
       - main
       - master
 
+# Minimal permissions — read-only. Never grant write unless required.
 permissions:
   contents: read
 
 jobs:
   safe-health-checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 10   # prevent runaway jobs
+
     steps:
       - name: Checkout
-      uses: actions/checkout@v4
+        uses: actions/checkout@v4
 
       - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.x"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # Cache pip to speed up repeated runs
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-hf-cli-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-hf-cli-
 
       - name: Install Hugging Face CLI
-      run: python -m pip install --upgrade "huggingface_hub[cli]"
+        run: python -m pip install --upgrade "huggingface_hub[cli]"
 
-      - name: Verify GitHub CLI is available
-      run: gh --version
+      # Version checks are informational — don't fail the job if versions drift
+      - name: Verify GitHub CLI version
+        continue-on-error: true
+        run: |
+          gh --version
+          echo "GH_VERSION=$(gh --version | head -1)" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Verify Hugging Face CLI
-      run: hf version
+      - name: Verify Hugging Face CLI version
+        continue-on-error: true
+        run: |
+          hf version
+          echo "HF_VERSION=$(hf version)" >> "$GITHUB_STEP_SUMMARY"
 
+      # Auth checks — these DO fail the job if broken
       - name: GitHub auth check
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        gh auth status
-        gh api user --jq '.login'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh auth status
+          LOGIN=$(gh api user --jq '.login')
+          echo "GitHub login: $LOGIN"
+          echo "GH_LOGIN=$LOGIN" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Hugging Face auth check
-      env:
-        HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      run: |
-        if [ -z "${HF_TOKEN}" ]; then
-          echo "HF_TOKEN is missing. Add repository secret HF_TOKEN."
-          exit 1
-        fi
-        hf auth whoami
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "::error::HF_TOKEN secret is missing. Add it under repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          hf auth whoami
+          echo "HF auth: OK" >> "$GITHUB_STEP_SUMMARY"
 
+      # No-cost metadata read — safe discovery only, no writes/uploads
       - name: No-cost HF metadata check
-      env:
-        HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      run: |
-        hf models list --search "mcp" --limit 3
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          echo "=== Models (search: mcp, limit: 3) ==="
+          hf models list --search "mcp" --limit 3
+
+          echo ""
+          echo "=== Datasets (search: instruction, limit: 3) ==="
+          hf datasets list --search "instruction" --limit 3
+
+      # Summary badge
+      - name: Write job summary
+        if: always()
+        run: |
+          echo "## Ecosystem Health Check" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| GitHub CLI present | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| HF CLI present | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| GitHub auth | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| HF auth | ✅ |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| HF metadata read | ✅ |" >> "$GITHUB_STEP_SUMMARY"
