@@ -1,24 +1,56 @@
-name: Ecosystem health (debug loop)
+name: Ecosystem Health Check (Debug Loop)
 
 on:
-  workflow_dispatch:
   push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-  health:
+  health-check:
     runs-on: windows-latest
+
     steps:
-      - name: Checkout
+      - name: ✅ Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run debug loop (JSON output)
-        shell: cmd
+      # Optional: Show environment info (helps debugging)
+      - name: 🧾 Environment info
+        shell: pwsh
         run: |
-          call scripts\debug-run.cmd -Json
+          Write-Host "PowerShell version:"
+          $PSVersionTable
+          Write-Host "Working directory:"
+          Get-Location
 
-      - name: Upload logs
+      # ✅ Run PowerShell debug loop (preferred)
+      - name: 🔁 Run debug loop (PowerShell)
+        shell: pwsh
+        run: |
+          pwsh scripts/Run-DebugLoop.ps1 -Iterations 3 -Json
+
+      # OR: Run the CMD wrapper instead
+      # - name: 🔁 Run debug loop (CMD)
+      #   shell: cmd
+      #   run: |
+      #     call scripts\debug-run.cmd -Json
+
+      # ✅ Upload logs even if failure occurs
+      - name: 📦 Upload logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ecosystem-health-logs
-          path: scripts\logs\
+          path: scripts/logs/
+
+      # ✅ Optional: Print summary to job output
+      - name: 📊 Print summary
+        if: always()
+        shell: pwsh
+        run: |
+          $logs = Get-ChildItem scripts/logs -Filter *.log -ErrorAction SilentlyContinue
+          if ($logs.Count -eq 0) {
+            Write-Host "No log files found"
+          } else {
+            Write-Host "Collected $($logs.Count) log files"
+          }
