@@ -1,0 +1,11 @@
+- name: Run loop
+  shell: pwsh
+  run: |
+    pwsh scripts/Run-DebugLoop.ps1 -Iterations 3 -Json
+
+- name: Upload logs
+  if: always()
+  uses: actions/upload-artifact@v4
+  with:
+    name: ecosystem-health-logs
+    path: scripts/logs/
