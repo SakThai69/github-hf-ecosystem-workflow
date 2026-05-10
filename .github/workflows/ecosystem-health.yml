@@ -1,4 +1,11 @@
-name: Ecosystem Health Check (Debug Loop)
+on:
+  workflow_dispatch:
+    inputs:
+      iterations:
+        description: "Number of iterations"
+        default: "3"
+        
+        - name: Ecosystem Health Check (Debug Loop)
 
 on:
   push:
