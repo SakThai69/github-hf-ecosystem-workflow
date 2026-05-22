@@ -40,8 +40,8 @@ Be respectful, constructive, and collaborative. Contributions of all skill level
 1. **Fork** this repository
 2. **Clone** your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/YOUR_FORK.git
-   cd YOUR_FORK
+   git clone https://github.com/<your-username>/github-hf-ecosystem-workflow.git
+   cd github-hf-ecosystem-workflow
    ```
 3. **Run the health check** to confirm your local setup is good:
    ```powershell
@@ -136,11 +136,11 @@ Validate YAML syntax before pushing:
 
 ```bash
 # Using Python (available on most systems)
-python3 -c "import yaml; yaml.safe_load(open('.github/workflows/blank.yml'))" && echo "VALID"
+python3 -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))" && echo "VALID"
 
 # Using actionlint (recommended)
 # https://github.com/rhysd/actionlint
-actionlint .github/workflows/blank.yml
+actionlint .github/workflows/*.yml
 ```
 
 ### Checklist Before Opening a PR

@@ -2,7 +2,8 @@
 
 > A production-ready, **no-cost**, read-only automation stack connecting GitHub Actions with the Hugging Face ecosystem — built for AI/ML developers who want safe, reliable CI without surprises.
 
-[![CI](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/blank.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/blank.yml)
+[![CI](https://github.com/SakThai69/github-hf-ecosystem-workflow/actions/workflows/ci.yml/badge.svg)](https://github.com/SakThai69/github-hf-ecosystem-workflow/actions/workflows/ci.yml)
+[![Ecosystem Health](https://github.com/SakThai69/github-hf-ecosystem-workflow/actions/workflows/ecosystem-health.yml/badge.svg)](https://github.com/SakThai69/github-hf-ecosystem-workflow/actions/workflows/ecosystem-health.yml)
 [![Security Policy](https://img.shields.io/badge/security-policy-blue?logo=github)](SECURITY.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![HF Token: read-only](https://img.shields.io/badge/HF%20token-read--only-orange?logo=huggingface)](https://huggingface.co/settings/tokens)
@@ -72,12 +73,20 @@ This repository provides a **complete operating model** for working with GitHub 
 ```
 📦 your-repo/
 ├── 📁 .github/
-│   └── 📁 workflows/
-│       └── 📄 blank.yml               # ← Main CI workflow (start here)
+│   ├── 📁 ISSUE_TEMPLATE/
+│   │   ├── 📄 bug_report.md           # ← Bug report template
+│   │   ├── 📄 feature_request.md      # ← Feature request template
+│   │   └── 📄 config.yml              # ← Issue chooser config
+│   ├── 📁 workflows/
+│   │   ├── 📄 ci.yml                  # ← Main CI: GH + HF auth + no-cost reads (Linux)
+│   │   └── 📄 ecosystem-health.yml    # ← Windows debug-loop runner
+│   └── 📄 PULL_REQUEST_TEMPLATE.md    # ← PR template
 │
 ├── 📁 scripts/
 │   ├── 📄 ecosystem-health.ps1        # ← Local health checker (PowerShell)
-│   └── 📄 ecosystem-health.cmd        # ← Batch launcher for the PS1 script
+│   ├── 📄 ecosystem-health.cmd        # ← Batch launcher for the PS1 script
+│   ├── 📄 Run-DebugLoop.ps1           # ← Multi-iteration loop runner
+│   └── 📄 debug-run.cmd               # ← CMD wrapper for the debug loop
 │
 ├── 📁 templates/
 │   └── 📁 github/
@@ -100,8 +109,8 @@ This repository provides a **complete operating model** for working with GitHub 
 ### 1️⃣ Clone the repo
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
+git clone https://github.com/SakThai69/github-hf-ecosystem-workflow.git
+cd github-hf-ecosystem-workflow
 ```
 
 ### 2️⃣ Add your HF Token as a GitHub Actions secret
@@ -110,7 +119,7 @@ cd YOUR_REPO
 GitHub repo → Settings → Secrets and variables → Actions → New repository secret
 
 Name:   HF_TOKEN
-Value:  hf_xxxxxxxxxxxxxxxxxxxx   ← read-only token from huggingface.co/settings/tokens
+Value:  <read-only token from huggingface.co/settings/tokens>
 ```
 
 ### 3️⃣ Run the local health check
@@ -241,7 +250,7 @@ REM Dataset discovery
 
 **Fallback resolution order:**
 ```
-1. %USERPROFILE%\AppData\Roaming\Python\Python314\Scripts\hf.exe
+1. %USERPROFILE%\AppData\Roaming\Python\Python3{14,13,12,11,10}\Scripts\hf.exe
 2. hf on PATH
 3. ERROR with install instructions
 ```
@@ -250,7 +259,7 @@ REM Dataset discovery
 
 ## ⚙️ GitHub Actions Workflows
 
-### `blank.yml` — Main CI Workflow
+### `ci.yml` — Main CI Workflow (Linux)
 
 The primary workflow. Triggered on `push`, `pull_request` (both targeting `main`), and `workflow_dispatch`.
 
@@ -271,6 +280,10 @@ Checkout
                     └─▶ [always] Write job summary (real ✅/❌)
 ```
 
+### `ecosystem-health.yml` — Windows Debug Loop
+
+A Windows-runner workflow that exercises `scripts/Run-DebugLoop.ps1` for `-Iterations 3 -Json` and uploads logs as an artifact. Useful when you need to validate the PowerShell-side health stack in CI.
+
 ### `github-hf-no-cost-checks.yml` — Standalone Template
 
 Portable version that also triggers on `master` branch. Use this when setting up a new repo.
@@ -285,7 +298,7 @@ cp templates/github/workflows/github-hf-no-cost-checks.yml .github/workflows/
 
 ### MCP Server (Cursor)
 
-File: `C:\Users\gensa\.cursor\mcp.json`
+File: `%USERPROFILE%\.cursor\mcp.json` (Windows) or `~/.cursor/mcp.json` (macOS/Linux)
 
 Required auth pattern:
 ```json
@@ -439,8 +452,7 @@ Copy this checklist to your repo's first issue or project board:
 
 ## 📄 License
 
-MIT © [YOUR_NAME]  
-See [`LICENSE`](LICENSE) for full terms.
+MIT © SakThai69 — see [`LICENSE`](LICENSE) for full terms.
 
 ---
 

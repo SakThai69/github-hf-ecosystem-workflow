@@ -1,0 +1,42 @@
+# Secrets and local env (never commit)
+.env
+.env.*
+*.env
+secrets.json
+credentials.json
+*.pem
+*.key
+
+# Local script artifacts
+scripts/logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# HF / model caches (large, machine-local)
+.cache/
+.huggingface/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+
+# Build / dist
+dist/
+build/
+*.egg
