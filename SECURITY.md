@@ -11,8 +11,10 @@ This repository operates a **GitHub + Hugging Face ecosystem** with strict no-co
 | Component | Supported |
 |---|---|
 | `scripts/ecosystem-health.ps1` | ✅ Current |
+| `scripts/Run-DebugLoop.ps1` | ✅ Current |
 | `hf-safe.cmd` | ✅ Current |
-| `.github/workflows/blank.yml` | ✅ Current |
+| `.github/workflows/ci.yml` | ✅ Current |
+| `.github/workflows/ecosystem-health.yml` | ✅ Current |
 | `templates/github/workflows/github-hf-no-cost-checks.yml` | ✅ Current |
 
 ---
@@ -103,7 +105,7 @@ The following are **never permitted** in any workflow, script, or prompt in this
 
 ### `hf-safe.cmd` — Absolute Path Fallback
 
-`hf-safe.cmd` tries a hardcoded absolute path (`%USERPROFILE%\AppData\Roaming\Python\Python314\Scripts\hf.exe`) before falling back to `PATH`. This path is user-scoped and non-privileged. If your Python installation is in a different location, update the `HF_FALLBACK` variable accordingly.
+`hf-safe.cmd` tries a list of Python user-scripts paths (`%USERPROFILE%\AppData\Roaming\Python\Python3{14,13,12,11,10}\Scripts\hf.exe`) before falling back to `PATH`. Those paths are user-scoped and non-privileged. If your Python installation is in a different location, extend the `for %%V in (...)` list in `hf-safe.cmd`.
 
 ### `"on":` YAML Quoting
 

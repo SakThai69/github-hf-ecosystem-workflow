@@ -1,5 +1,5 @@
 @echo off
-setlocal EnableExtensions
+setlocal EnableExtensions EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
 if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
@@ -19,17 +19,19 @@ if "%ITERATIONS%"=="" set "ITERATIONS=3"
 echo ======================================
 echo   DEBUG LOOP: Ecosystem Health Check
 echo ======================================
-echo Script: %SCRIPT%
-echo Logs:   %LOGDIR%
+echo Script:     %SCRIPT%
+echo Logs:       %LOGDIR%
 echo Iterations: %ITERATIONS%
 echo.
 
 set "OVERALL=0"
 
+rem Build a locale-independent timestamp (yyyyMMdd-HHmmss) using PowerShell.
+rem Avoids the %DATE%/%TIME% format dependency that broke log filenames.
+for /f "usebackq delims=" %%T in (`%PS% -NoProfile -Command "Get-Date -Format 'yyyyMMdd-HHmmss'"`) do set "RUN_TS=%%T"
+
 for /L %%i in (1,1,%ITERATIONS%) do (
-  set "TS=%DATE:~-4%%DATE:~3,2%%DATE:~0,2%-%TIME:~0,2%%TIME:~3,2%%TIME:~6,2%"
-  set "TS=!TS: =0!"
-  set "LOGFILE=%LOGDIR%\ecosystem-health-run%%i-!TS!.log"
+  set "LOGFILE=%LOGDIR%\ecosystem-health-run%%i-!RUN_TS!.log"
 
   echo --- Run %%i/%ITERATIONS% ---
   echo Logging to: !LOGFILE!

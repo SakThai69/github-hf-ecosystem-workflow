@@ -7,23 +7,23 @@ This playbook keeps Hugging Face chat-driven workflows reliable, low-risk, and n
 ## 1) Startup checks (2-3 minutes)
 
 1. Confirm MCP config is environment-based (no hardcoded token):
-   - Check `C:\Users\gensa\.cursor\mcp.json`
+   - Check `%USERPROFILE%\.cursor\mcp.json` (Windows) or `~/.cursor/mcp.json` (macOS/Linux)
    - Expected auth header pattern: `Bearer ${HF_TOKEN}`
-2. Confirm CLI path and version:
-   - `C:\Users\gensa\AppData\Roaming\Python\Python314\Scripts\hf.exe version`
+2. Confirm CLI version (via the safe wrapper):
+   - `.\hf-safe.cmd version`
 3. Confirm CLI auth:
-   - `C:\Users\gensa\AppData\Roaming\Python\Python314\Scripts\hf.exe auth whoami`
+   - `.\hf-safe.cmd auth whoami`
 4. Confirm MCP auth:
    - Run MCP tool: `hf_whoami`
 5. Confirm a no-cost read action:
-   - CLI: `hf-safe.cmd models ls --search "mcp" --limit 3`
+   - CLI: `.\hf-safe.cmd models list --search "mcp" --limit 3`
    - MCP: `hub_repo_search` or `hf_doc_search`
 
 ### Consistent CLI invocation
 
 - Prefer `hf-safe.cmd` from the workspace root.
-- `hf-safe.cmd` first tries:
-  - `C:\Users\gensa\AppData\Roaming\Python\Python314\Scripts\hf.exe`
+- `hf-safe.cmd` first tries the Python user-scripts paths for Python 3.10–3.14:
+  - `%USERPROFILE%\AppData\Roaming\Python\Python3{14,13,12,11,10}\Scripts\hf.exe`
   - then plain `hf` from `PATH`.
 - This avoids shell-to-shell PATH drift without storing secrets.
 
@@ -71,10 +71,10 @@ Symptoms:
 - `hf` command missing or auth failure, but MCP `hf_whoami` works.
 
 Actions:
-1. Run CLI with absolute path:
-   - `C:\Users\gensa\AppData\Roaming\Python\Python314\Scripts\hf.exe auth whoami`
-   - or use `hf-safe.cmd auth whoami`
-2. If command not found from shell, add user scripts directory to `PATH`.
+1. Run CLI through the safe wrapper:
+   - `.\hf-safe.cmd auth whoami`
+2. If command not found from shell, add the Python user-scripts directory to `PATH`
+   (e.g. `%USERPROFILE%\AppData\Roaming\Python\Python313\Scripts`).
 3. Re-auth CLI if needed:
    - `hf auth login` (interactive)
 
@@ -87,7 +87,7 @@ Symptoms:
 - CLI works, but MCP auth/read tools fail.
 
 Actions:
-1. Validate `C:\Users\gensa\.cursor\mcp.json` syntax and server URL.
+1. Validate `mcp.json` syntax and server URL (Windows: `%USERPROFILE%\.cursor\mcp.json`).
 2. Ensure token is env-based and loaded in Cursor environment:
    - `HF_TOKEN` set in user/system env (never hardcoded in config files).
 3. Restart Cursor after env changes so MCP server picks up updated env.
@@ -106,8 +106,10 @@ Likely cause:
 
 ## 6) Optional hardening step
 
-To make `hf` available in all new PowerShell sessions, add this to your PowerShell profile:
+To make `hf` available in all new PowerShell sessions, add a line like this to your PowerShell profile (substitute the Python version you actually have installed):
 
-`$env:Path += ";C:\Users\gensa\AppData\Roaming\Python\Python314\Scripts"`
+```powershell
+$env:Path += ";$env:USERPROFILE\AppData\Roaming\Python\Python313\Scripts"
+```
 
 (Use persistent profile update only if desired; this is not required for MCP operation.)

@@ -7,8 +7,16 @@ param(
 
 Set-StrictMode -Version Latest
 
+if (-not (Test-Path $ScriptPath)) {
+  Write-Error "Health script not found at: $ScriptPath"
+  exit 2
+}
+
 $logsDir = Join-Path $PSScriptRoot 'logs'
 if (-not (Test-Path $logsDir)) { New-Item -ItemType Directory -Path $logsDir | Out-Null }
+
+# Prefer PowerShell Core (pwsh) if present, fall back to Windows PowerShell.
+$psHost = if (Get-Command pwsh -ErrorAction SilentlyContinue) { 'pwsh' } else { 'powershell.exe' }
 
 function New-LogFileName([int]$i) {
   $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
@@ -21,13 +29,13 @@ for ($i = 1; $i -le $Iterations; $i++) {
   $logFile = New-LogFileName $i
   Write-Host ("--- Run {0}/{1} ---" -f $i, $Iterations)
 
-  $args = @()
-  if ($Json)    { $args += '-Json' }
-  if ($PSBoundParameters.ContainsKey('Verbose')) { $args += '-Verbose' }
+  # Note: do not name this $args — that's a PowerShell automatic variable.
+  $psArgs = @()
+  if ($Json)                                     { $psArgs += '-Json' }
+  if ($PSBoundParameters.ContainsKey('Verbose')) { $psArgs += '-Verbose' }
 
   try {
-    # Capture all streams to file + console
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $ScriptPath @args *>&1 |
+    & $psHost -NoProfile -ExecutionPolicy Bypass -File $ScriptPath @psArgs *>&1 |
       Tee-Object -FilePath $logFile | Out-Host
 
     $code = $LASTEXITCODE

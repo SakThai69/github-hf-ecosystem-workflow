@@ -4,11 +4,11 @@ Practical, no-cost workflow to operate GitHub and Hugging Face together using en
 
 ## Current Workspace State
 
-- Git repository: not initialized at `C:\Users\gensa\.cursor\projects\empty-window`.
-- Existing HF control-plane assets detected:
+- Git repository: initialized; CI is wired via `.github/workflows/ci.yml`.
+- Existing HF control-plane assets:
   - `HF_CURSOR_CONTROL_PLANE_PLAYBOOK.md`
-  - `hf-safe.cmd`
-- Hugging Face MCP server metadata found under `mcps\plugin-huggingface-skills-huggingface-skills`.
+  - `hf-safe.cmd` (Python user-scripts fallback for `hf.exe`)
+- Hugging Face MCP server: configured via Cursor's `mcp.json` using `Bearer ${HF_TOKEN}`.
 
 ## Security Model (Env-First)
 
@@ -59,15 +59,20 @@ Loop:
 
 ## CI Flow (GitHub Actions, Non-Destructive)
 
-This workspace is currently not a git repo, so use the portable template:
+Active workflows in this repo:
+
+- `.github/workflows/ci.yml` — main Linux CI: auth + no-cost HF metadata read.
+- `.github/workflows/ecosystem-health.yml` — Windows runner for the PowerShell debug loop.
+
+A portable template (for bootstrapping new repos) is also kept at:
 
 - `templates/github/workflows/github-hf-no-cost-checks.yml`
 
-When you initialize a repo:
+When setting up CI on a new repo:
 
-1. Copy template to `.github/workflows/github-hf-no-cost-checks.yml`.
+1. Copy a template to `.github/workflows/`.
 2. Add Actions secret `HF_TOKEN` (read-only token).
-3. Push branch and run workflow.
+3. Push branch and trigger the workflow.
 
 CI policy:
 

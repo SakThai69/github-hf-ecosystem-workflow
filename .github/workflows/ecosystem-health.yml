@@ -1,26 +1,31 @@
 name: Ecosystem Health Check (Windows)
 
-on:
+"on":
   push:
     branches: [ main ]
   pull_request:
+    branches: [ main ]
   workflow_dispatch:
+
+# Minimal permissions — read-only. Never grant write unless required.
+permissions:
+  contents: read
 
 jobs:
   health-check:
     runs-on: windows-latest
+    timeout-minutes: 15
 
     steps:
-      - name: ✅ Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🐍 Setup Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
-      # Optional: Show environment info (helps debugging)
-      - name: 🧾 Environment info
+      - name: Environment info
         shell: pwsh
         run: |
           Write-Host "PowerShell version:"
@@ -28,28 +33,20 @@ jobs:
           Write-Host "Working directory:"
           Get-Location
 
-      # ✅ Run PowerShell debug loop (preferred)
-      - name: 🔁 Run debug loop (PowerShell)
+      # Run debug loop directly — `shell: pwsh` already invokes pwsh, no double-call needed.
+      - name: Run debug loop (PowerShell)
         shell: pwsh
-        run: |
-          pwsh scripts/Run-DebugLoop.ps1 -Iterations 3 -Json
+        run: ./scripts/Run-DebugLoop.ps1 -Iterations 3 -Json
 
-      # OR: Run the CMD wrapper instead
-      # - name: 🔁 Run debug loop (CMD)
-      #   shell: cmd
-      #   run: |
-      #     call scripts\debug-run.cmd -Json
-
-      # ✅ Upload logs even if failure occurs
-      - name: 📦 Upload logs
+      - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ecosystem-health-logs
           path: scripts/logs/
+          if-no-files-found: warn
 
-      # ✅ Optional: Print summary to job output
-      - name: 📊 Print summary
+      - name: Print summary
         if: always()
         shell: pwsh
         run: |
