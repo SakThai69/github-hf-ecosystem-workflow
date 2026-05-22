@@ -1,0 +1,318 @@
+# Instincts generated from https://github.com/SakThai69/github-hf-ecosystem-workflow
+# Generated: 2026-05-22T23:36:07.873Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: github-hf-ecosystem-workflow-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: fix
+
+## Evidence
+
+- 1 commits analyzed
+- Detected conventional commit pattern
+- Examples: fix: deep-clean repo — kill duplicate CI, fix delayed-expansion bug, sync docs
+
+---
+id: github-hf-ecosystem-workflow-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Commit Length
+
+## Action
+
+Write moderate-length commit messages (~78 characters)
+
+## Evidence
+
+- Average commit message length: 78 chars
+- Based on 1 commits
+
+---
+id: github-hf-ecosystem-workflow-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Naming Files
+
+## Action
+
+Use snake_case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: snake_case
+
+---
+id: github-hf-ecosystem-workflow-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: github-hf-ecosystem-workflow-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: github-hf-ecosystem-workflow-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: github-hf-ecosystem-workflow-instinct-file-naming
+trigger: "When creating or renaming a file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct File Naming
+
+## Action
+
+Name the file using snake_case
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: github-hf-ecosystem-workflow-instinct-function-naming
+trigger: "When defining a function"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct Function Naming
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: github-hf-ecosystem-workflow-instinct-class-naming
+trigger: "When defining a class"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: github-hf-ecosystem-workflow-instinct-constant-naming
+trigger: "When defining a constant"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: github-hf-ecosystem-workflow-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: github-hf-ecosystem-workflow-instinct-export-style
+trigger: "When exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: github-hf-ecosystem-workflow-instinct-test-location
+trigger: "When adding or updating tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct Test Location
+
+## Action
+
+Place test files in a separate directory from source code
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation
+
+---
+id: github-hf-ecosystem-workflow-instinct-commit-prefix
+trigger: "When writing a commit message"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct Commit Prefix
+
+## Action
+
+Start the message with a conventional commit prefix such as 'fix:'
+
+## Evidence
+
+- Seen in commit 'fix: deep-clean repo — kill duplicate CI, fix delayed-expansion bug, sync docs'
+- Pattern in commits.prefixes
+
+---
+id: github-hf-ecosystem-workflow-instinct-commit-length
+trigger: "When writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct Commit Length
+
+## Action
+
+Keep the commit message concise, around 78 characters on average
+
+## Evidence
+
+- Pattern in commits.averageLength
+
+---
+id: github-hf-ecosystem-workflow-instinct-ci-workflow-location
+trigger: "When configuring CI workflows"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: SakThai69/github-hf-ecosystem-workflow
+---
+
+# Github Hf Ecosystem Workflow Instinct Ci Workflow Location
+
+## Action
+
+Place workflow YAML files under .github/workflows/
+
+## Evidence
+
+- Pattern in architecture.configFiles
+

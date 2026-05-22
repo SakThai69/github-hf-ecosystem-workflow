@@ -1,0 +1,6 @@
+interface:
+  display_name: "Github Hf Ecosystem Workflow"
+  short_description: "Repo-specific patterns and workflows for github-hf-ecosystem-workflow"
+  default_prompt: "Use the github-hf-ecosystem-workflow repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true
