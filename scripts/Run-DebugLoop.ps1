@@ -2,7 +2,6 @@
 param(
   [int]$Iterations = 3,
   [switch]$Json,
-  [switch]$Verbose,
   [string]$ScriptPath = (Join-Path $PSScriptRoot 'ecosystem-health.ps1')
 )
 
@@ -24,7 +23,7 @@ for ($i = 1; $i -le $Iterations; $i++) {
 
   $args = @()
   if ($Json)    { $args += '-Json' }
-  if ($Verbose) { $args += '-Verbose' }
+  if ($PSBoundParameters.ContainsKey('Verbose')) { $args += '-Verbose' }
 
   try {
     # Capture all streams to file + console

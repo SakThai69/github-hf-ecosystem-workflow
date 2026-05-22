@@ -165,13 +165,31 @@ $results.Add([pscustomobject]@{
 
 # Python (informational — required for HF CLI install)
 $hasPy = Test-CommandPresent "python"
-$pyDetail = if ($hasPy) {
-  # Keep behaviour similar to before (string + Trim)
-  $pv = (python --version 2>&1)
-  if ($pv -is [System.Array]) { ($pv -join [Environment]::NewLine).Trim() } else { ($pv.ToString()).Trim() }
+$pyDetail = ""
+
+if ($hasPy) {
+  try {
+    # Pre-initialize $pv to avoid undefined variable reference if execution fails
+    $pv = $null
+    $pv = & python --version 2>&1
+    if ($null -ne $pv) {
+      if ($pv -is [System.Array]) {
+        $pyDetail = ($pv -join [Environment]::NewLine).Trim()
+      } else {
+        $pyDetail = ($pv.ToString()).Trim()
+      }
+    } else {
+      $hasPy = $false
+      $pyDetail = "python found on PATH but returned no output"
+    }
+  }
+  catch {
+    $hasPy = $false
+    $pyDetail = "python found on PATH but failed to execute: $($_.Exception.Message)"
+  }
 }
 else {
-  "python not found — required to install HF CLI via pip"
+  $pyDetail = 'python not found — required to install HF CLI via pip'
 }
 
 $results.Add([pscustomobject]@{
@@ -208,13 +226,13 @@ foreach ($r in $results) {
 }
 
 Write-Host ""
-Write-Host "══════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host "  GitHub + HF Ecosystem Health" -ForegroundColor Cyan
-Write-Host "══════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
 
 foreach ($cat in $categories) {
   Write-Host ""
-  Write-Host "  ▸ $($cat.ToUpper())" -ForegroundColor DarkCyan
+  Write-Host "  --> $($cat.ToUpper())" -ForegroundColor DarkCyan
 
   foreach ($item in $byCategory[$cat]) {
     Write-CheckLine $item
@@ -228,17 +246,17 @@ foreach ($r in $results) {
 }
 
 Write-Host ""
-Write-Host "──────────────────────────────────────────" -ForegroundColor DarkGray
+Write-Host "------------------------------------------" -ForegroundColor DarkGray
 
 if ($failed.Count -eq 0) {
-  Write-Host "  Status: READY ✓  ($($results.Count) checks passed)" -ForegroundColor Green
+  Write-Host "  Status: READY ($($results.Count) checks passed)" -ForegroundColor Green
   Write-Host ""
   exit 0
 }
 else {
-  Write-Host "  Status: ATTENTION REQUIRED — $($failed.Count) failing check(s):" -ForegroundColor Yellow
+  Write-Host "  Status: ATTENTION REQUIRED - $($failed.Count) failing check(s):" -ForegroundColor Yellow
   foreach ($f in $failed) {
-    Write-Host "    • $($f.check)" -ForegroundColor Red
+    Write-Host "    - $($f.check)" -ForegroundColor Red
   }
   Write-Host ""
   Write-Host "  See troubleshooting matrix in GITHUB_HF_ECOSYSTEM_PLAYBOOK.md" -ForegroundColor DarkGray
