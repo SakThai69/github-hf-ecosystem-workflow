@@ -1,36 +1,120 @@
-# This is a basic workflow to help you get started with Actions
+# GitHub + Hugging Face Ecosystem Health Workflow
+# Drop this into .github/workflows/ and add HF_TOKEN as a repo Actions secret.
 
 name: CI
 
-# Controls when the workflow will run
-on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
+"on":
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+# Minimal permissions — read-only. Never grant write unless required.
+permissions:
+  contents: read
+
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      # ── Checkout ────────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # Runs a single command using the runners shell
+      # ── Python + HF CLI setup ───────────────────────────────────────────────
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-hf-cli-${{ hashFiles('**/requirements*.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-hf-cli-
+
+      - name: Install Hugging Face CLI
+        run: python -m pip install --upgrade "huggingface_hub[cli]"
+
+      # ── Version checks (informational — never block the job) ────────────────
+      - name: Verify GitHub CLI version
+        id: gh_version
+        continue-on-error: true
+        run: gh --version
+
+      - name: Verify Hugging Face CLI version
+        id: hf_version
+        continue-on-error: true
+        run: hf version
+
+      # ── Auth checks (these DO fail the job if broken) ───────────────────────
+      - name: GitHub auth check
+        id: gh_auth
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh auth status
+          LOGIN=$(gh api user --jq '.login')
+          echo "GitHub login: $LOGIN"
+          echo "login=$LOGIN" >> "$GITHUB_OUTPUT"
+
+      - name: Hugging Face auth check
+        id: hf_auth
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "${HF_TOKEN}" ]; then
+            echo "::error::HF_TOKEN secret is missing. Add it under repo Settings → Secrets → Actions."
+            exit 1
+          fi
+          hf auth whoami
+
+      # ── No-cost metadata read (safe discovery only — no writes/uploads) ─────
+      - name: No-cost HF metadata check
+        id: hf_metadata
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          echo "=== Models (search: mcp, limit: 3) ==="
+          hf models list --search "mcp" --limit 3
+
+          echo ""
+          echo "=== Datasets (search: instruction, limit: 3) ==="
+          hf datasets list --search "instruction" --limit 3
+
+      # ── Hello world smoke test (from blank template) ────────────────────────
       - name: Run a one-line script
         run: echo Hello, world!
 
-      # Runs a set of commands using the runners shell
       - name: Run a multi-line script
         run: |
           echo Add other actions to build,
           echo test, and deploy your project.
+
+      # ── Job summary (reflects actual step outcomes) ─────────────────────────
+      - name: Write job summary
+        if: always()
+        env:
+          GH_VERSION_RESULT: ${{ steps.gh_version.outcome }}
+          HF_VERSION_RESULT: ${{ steps.hf_version.outcome }}
+          GH_AUTH_RESULT: ${{ steps.gh_auth.outcome }}
+          HF_AUTH_RESULT: ${{ steps.hf_auth.outcome }}
+          HF_METADATA_RESULT: ${{ steps.hf_metadata.outcome }}
+          GH_LOGIN: ${{ steps.gh_auth.outputs.login }}
+        run: |
+          icon() { [ "$1" = "success" ] && echo "✅" || echo "❌"; }
+
+          echo "## Ecosystem Health Check" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|:---:|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| GitHub CLI version | $(icon $GH_VERSION_RESULT) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| HF CLI version | $(icon $HF_VERSION_RESULT) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| GitHub auth (login: \`$GH_LOGIN\`) | $(icon $GH_AUTH_RESULT) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Hugging Face auth | $(icon $HF_AUTH_RESULT) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| HF metadata read | $(icon $HF_METADATA_RESULT) |" >> "$GITHUB_STEP_SUMMARY"
